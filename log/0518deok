@@ -1,26 +1,28 @@
-# 2 vs 2
+# machine2 vs machine2
 31s vs 5s
 p2 win
 
-# 2 vs 3
+# machine2 vs machine3
 37s vs 2m17s
 p1 win
 
-# 2 vs 4
+# machine2 vs machine4
 35s vs 1m26s
 p2 win
 
-# 2 vs 5
+# machine2 vs machine5
 35s vs 1m10
 p1 win
+35s vs 1m6s
+p1 win
 
-# 3 vs 2
+# machine3 vs machine2
 2m15 vs 4.3s
 p2 win
 2m8s vs 26s
 p2 win
 
-# 3 vs 3
+# machine3 vs machine3
 3m8 vs 2m13
 p2 win
 2m46 vs 2m5s
@@ -28,11 +30,11 @@ p2 win
 2m54 vs 2m14
 p2 win
 
-# 3 vs 4
+# machine3 vs machine4
 2m16s vs 1m26s
 p2 win
 
-# 4 vs 2
+# machine4 vs machine2
 45s vs 13s
 p1 win
 45s vs 7s
@@ -40,7 +42,7 @@ p2 win
 5m14s vs 1m12s
 p2 win
 
-# 4 vs 4
+# machine4 vs machine4
 45s vs 45s
 p2 win
 26s vs 12s
@@ -48,18 +50,20 @@ p1 win
 1m3s vs 1m29s
 p2 win
 
-# 4 vs 5
+# machine4 vs machine5
 47s vs 1m8s
 p1 win
 
-# 5 vs 2
+# machine5 vs machine2
 1m28s vs 50s
 p1 win
+1m27s vs 12s
+p2 win
 
-# 5 vs 4
+# machine5 vs machine4
 1m29s vs 4m39s
 p1 win
 
-# 5 vs 5
+# machine5 vs machine5
 1m27s vs 1m7s
 p2 win
