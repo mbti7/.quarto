@@ -62,4 +62,7 @@ p1 win
 p2 win
 
 # machine5 vs machine4
-1m29s vs임
+1m29s vs4m39s
+p1 win
+
+minmax를 사용하는걸 기본으로 알고리즘을 선택하는 것이 효율이 좋아보임 더 높은 승률을 위해서는 minmax+알파를 사용할 것
