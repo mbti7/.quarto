@@ -263,29 +263,45 @@ class P1():
     def evaluate(self, board):
         """
         보드 상태를 평가하여 점수를 반환합니다.
-        동일 특성을 가지는 라인/2x2는 점수를 높게 책정.
+        - 즉시승/즉시패, Fork, 중앙/코너 가중치, 라인 속성 일치 등 반영
         """
         score = 0
 
-        # 가로, 세로 라인 평가
+        # 1. 즉시승/즉시패 확인 (최우선)
+        if self.check_win(board):
+            return 10000  # 즉시 승리
+        
+        # 상대가 다음에 이길 수 있는지 확인 (즉시 패배 위험)
+        for piece in self.available_pieces:
+            if self.opponent_can_win_next_turn(piece):
+                return -10000  # 즉시 패배 위험
+        
+        # 2. Fork 점수
+        my_fork = self.count_forks(board)
+        opp_fork = self.count_forks(board, is_opponent=True)
+        score += 500 * my_fork
+        score -= 500 * opp_fork
+
+        # 3. 라인 점수 (속성 일치)
         for i in range(4):
-            row = [board[i][j] for j in range(4) if board[i][j] != 0]
-            col = [board[j][i] for j in range(4) if board[j][i] != 0]
+            row = [board[i][j] for j in range(4)]
+            col = [board[j][i] for j in range(4)]
             score += self.line_score(row)
             score += self.line_score(col)
-
-        # 대각선 평가
-        diag1 = [board[i][i] for i in range(4) if board[i][i] != 0]
-        diag2 = [board[i][3 - i] for i in range(4) if board[i][3 - i] != 0]
+        diag1 = [board[i][i] for i in range(4)]
+        diag2 = [board[i][3 - i] for i in range(4)]
         score += self.line_score(diag1)
         score += self.line_score(diag2)
 
-        # 2x2 사각형 평가
-        for r in range(3):
-            for c in range(3):
-                subgrid = [board[r][c], board[r][c+1], board[r+1][c], board[r+1][c+1]]
-                subgrid = [idx for idx in subgrid if idx != 0]
-                score += self.square_score(subgrid)
+        # 4. 중앙/코너 가중치
+        center_positions = [(1,1), (1,2), (2,1), (2,2)]
+        corner_positions = [(0,0), (0,3), (3,0), (3,3)]
+        for (r, c) in center_positions:
+            if board[r][c] > 0:
+                score += 20
+        for (r, c) in corner_positions:
+            if board[r][c] > 0:
+                score += 10
 
         return score
 
@@ -294,14 +310,23 @@ class P1():
 # ===============================================================
 
     def line_score(self, line):
-        if len(line) < 2:
+        """
+        한 줄(가로, 세로, 대각선)의 속성 일치 정도에 따라 점수 부여
+        """
+        indices = [idx-1 for idx in line if idx > 0]
+        if len(indices) < 2:
             return 0
-        attributes = self.attributes[[idx-1 for idx in line]]
+        attributes = self.attributes[indices]
         score = 0
-        for i in range(4):
-            # 모든 말이 동일 속성이면 가중치 증가
-            if len(set(attributes[:, i])) == 1:
-                score += len(line) * 10
+        for i in range(4):  # 각 속성별
+            values = attributes[:, i]
+            if len(set(values)) == 1:
+                if len(indices) == 4:
+                    score += 100
+                elif len(indices) == 3:
+                    score += 20
+                elif len(indices) == 2:
+                    score += 5
         return score
 
     def square_score(self, subgrid):
@@ -393,3 +418,28 @@ class P1():
 
     def available_locations(self):
         return [(row, col) for row, col in product(range(4), range(4)) if self.board[row][col] == 0]
+    
+# ===============================================================
+#           fork 개수 세기
+# ===============================================================
+
+    def count_forks(self, board, is_opponent=False):
+        """
+        Fork(두 개 이상의 승리 기회) 개수 세기
+        """
+        fork_count = 0
+        # 빈칸마다 말을 놓아보고, 승리하는 경우의 수를 센다
+        for row in range(4):
+            for col in range(4):
+                if board[row][col] == 0:
+                    # 내 말/상대 말 중에서 남은 말 아무거나 하나를 가정해서 놓아봄
+                    for piece in self.available_pieces:
+                        idx = self.pieces.index(piece) + 1
+                        board[row][col] = idx
+                        if self.check_win(board):
+                            fork_count += 1
+                        board[row][col] = 0
+                    # 한 칸에서 2개 이상 승리가 나오면 fork
+                    if fork_count >= 2:
+                        return 1
+        return 0
