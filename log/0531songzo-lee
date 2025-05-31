@@ -54,3 +54,5 @@ p1 win
 
 1m 22.8s vs 7m 14.9s
 p1 win
+
+MCTS 방식으로 진행 하는 것이 minimax 방식보다 빠른 속도와 높은 승률을을 보임
