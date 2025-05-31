@@ -1,0 +1,56 @@
+예제 코드들 대결 기록
+# machine6 vs machine2
+58.7s vs 2.1s
+p1 win
+
+1m 11.8s vs 37.1s
+p1 win
+
+45.4s vs 3.6s
+p1 win
+
+1m 13.6s vs 4.3s
+p2 win
+
+1m 6.3s vs 5.4s
+p1 win
+
+# machine6 vs machine3
+39.2s vs 55.6s
+p2 win
+
+39.3s vs 55.7s
+p2 win
+
+39.8s vs 55.8s
+p2 win
+
+# machine6 vs machine4
+56.3s vs 12.0s
+p2 win
+
+1m 4.5s vs 21.2s
+p2 win
+
+47.4s vs 12.0s
+p2 win
+
+# machine6 vs machine5
+49.5s vs 32.5s
+p2 win
+
+34.4s vs 32.2s
+p1 win
+
+50.4s vs 35.6s
+p2 win
+
+37.1s vs 29.1s
+p2 win
+
+# machine6 vs machine6
+1m 22.7s vs 7m 13.9s
+p1 win
+
+1m 22.8s vs 7m 14.9s
+p1 win
