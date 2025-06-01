@@ -15,13 +15,6 @@ import time
     #       한 줄(가로, 세로, 대각선)에 동일한 속성이 2개 이상 모이지 않게 초반에는 분산
     #       너무 빨리 한 속성 3개를 모으면, 상대가 그 속성의 마지막 말을 피해서 주거나, 막아버릴 수 있음
 
-    # 중앙, 코너 우선순위 리스트
-PRIORITY_POSITIONS = [(1,1), (1,2), (2,1), (2,2), (0,0), (0,3), (3,0), (3,3)]
-
-def restart_game():
-    global DP_table
-    DP_table = {}
-
 class P2():
     turn_count = 0
     def __init__(self, board, available_pieces):
@@ -37,6 +30,10 @@ class P2():
         - 초반(턴 2 이하)에는 한 줄에 동일 속성이 2개 이상 몰릴 수 있는 말도 피합니다.
         - 그 외에는 미니맥스(알파-베타)로 상대가 가장 불리한 말을 줍니다.
         """
+            # 첫 번째 말 선택은 랜덤
+        if P2.turn_count == 0: 
+            return random.choice(self.available_pieces)
+
         depth = self.adjust_depth()
 
         # 1. 즉시 패배를 유발하는 말은 제외
@@ -87,45 +84,36 @@ class P2():
     def place_piece(self, selected_piece):
         """
         주어진 말을 보드에 배치합니다.
-        - 바로 놓아서 이길 수 있다면 그 수를 즉시 둡니다.
-        - 그렇지 않다면 미니맥스 + 알파-베타 가지치기를 사용합니다.
+        모든 위치에서 미니맥스를 실행하되, 우선순위 위치에는 가중치를 부여합니다.
         """
         P2.turn_count += 1
         piece_index = self.pieces.index(selected_piece) + 1
 
-        # 1. 즉시 승리 가능한 수 확인
-        winning_move = self.find_immediate_winning_move(piece_index)
-        if winning_move is not None:
-            return winning_move
-
-        # 2. 상대 즉시승 차단 (상대가 다음에 이길 수 있는 자리 막기)
-        for row, col in self.available_locations():
-            self.board[row][col] = piece_index
-            for opp_piece in self.available_pieces:
-                if self.opponent_can_win_next_turn(opp_piece):
-                    self.board[row][col] = 0
-                    break
-            else:
-                if (row, col) in PRIORITY_POSITIONS:
-                    self.board[row][col] = 0
-                    return (row, col)
-            self.board[row][col] = 0
-
-        # 3. 중앙/코너 우선
-        for (row, col) in PRIORITY_POSITIONS:
-            if self.board[row][col] == 0:
-                return (row, col)
         best_move = None
         max_score = float('-inf')
         depth = self.adjust_depth()
 
         for row, col in self.available_locations():
             self.board[row][col] = piece_index
-            score = self.minimax_place(self.board, depth=depth, alpha=float('-inf'), beta=float('inf'), is_maximizing=False)
+            
+            # 기본 미니맥스 점수
+            base_score = self.minimax_place(self.board, depth=depth, alpha=float('-inf'), beta=float('inf'), is_maximizing=False)
+            
+            # 위치별 추가 보너스 (우선순위 위치에 더 높은 점수)
+            position_bonus = 0
+            if (row, col) in [(1,1), (1,2), (2,1), (2,2)]:  # 중앙
+                position_bonus = 200
+            elif (row, col) in [(0,0), (0,3), (3,0), (3,3)]:  # 코너
+                position_bonus = 100
+            elif (row, col) in [(0,1), (0,2), (1,0), (1,3), (2,0), (2,3), (3,1), (3,2)]:  # 가장자리 중앙
+                position_bonus = 50
+            
+            final_score = base_score + position_bonus
+            
             self.board[row][col] = 0
 
-            if score > max_score:
-                max_score = score
+            if final_score > max_score:
+                max_score = final_score
                 best_move = (row, col)
 
         return best_move
@@ -267,26 +255,36 @@ class P2():
     def evaluate(self, board):
         """
         보드 상태를 평가하여 점수를 반환합니다.
-        - 즉시승/즉시패, Fork, 중앙/코너 가중치, 라인 속성 일치 등 반영
+        - 즉시승/즉시패, 한 수 뒤 승리, Fork, 위치 가중치, 라인 속성 일치 등 반영
         """
-        score = 0
-
         # 1. 즉시승/즉시패 확인 (최우선)
         if self.check_win(board):
-            return 10000  # 즉시 승리
+            return 100000000  # 즉시 승리
         
         # 상대가 다음에 이길 수 있는지 확인 (즉시 패배 위험)
         for piece in self.available_pieces:
             if self.opponent_can_win_next_turn(piece):
-                return -10000  # 즉시 패배 위험
+                return -100000000  # 즉시 패배 위험
         
-        # 2. Fork 점수
+        score = 0
+
+        # # 2. 한 수 뒤 승리 가능성 평가
+        # my_next_wins = self.count_next_turn_winning_opportunities(board)
+        # opp_next_wins = self.count_opponent_next_turn_winning_opportunities(board)
+        
+        # score += my_next_wins * 1000      # 내가 한 수 뒤에 이길 기회
+        # score -= opp_next_wins * 1000     # 상대가 한 수 뒤에 이길 기회
+
+        # 3. Fork 점수
         my_fork = self.count_forks(board)
         opp_fork = self.count_forks(board, is_opponent=True)
         score += 500 * my_fork
         score -= 500 * opp_fork
 
-        # 3. 라인 점수 (속성 일치)
+        # 4. 위치별 가중치 (우선순위 위치에 보너스)
+        score += self.calculate_position_bonus(board)
+
+        # 5. 라인 점수 (속성 일치)
         for i in range(4):
             row = [board[i][j] for j in range(4)]
             col = [board[j][i] for j in range(4)]
@@ -297,17 +295,34 @@ class P2():
         score += self.line_score(diag1)
         score += self.line_score(diag2)
 
-        # 4. 중앙/코너 가중치
+        return score
+
+    def calculate_position_bonus(self, board):
+        """
+        위치별 가중치를 계산합니다.
+        우선순위 위치에 말이 있으면 보너스 점수를 줍니다.
+        """
+        bonus = 0
+        
+        # 중앙 4칸 (가장 높은 가중치)
         center_positions = [(1,1), (1,2), (2,1), (2,2)]
-        corner_positions = [(0,0), (0,3), (3,0), (3,3)]
         for (r, c) in center_positions:
             if board[r][c] > 0:
-                score += 20
+                bonus += 100  # 중앙 보너스
+        
+        # 코너 4칸 (중간 가중치)
+        corner_positions = [(0,0), (0,3), (3,0), (3,3)]
         for (r, c) in corner_positions:
             if board[r][c] > 0:
-                score += 10
-
-        return score
+                bonus += 50   # 코너 보너스
+        
+        # 가장자리 중앙 (낮은 가중치)
+        edge_center_positions = [(0,1), (0,2), (1,0), (1,3), (2,0), (2,3), (3,1), (3,2)]
+        for (r, c) in edge_center_positions:
+            if board[r][c] > 0:
+                bonus += 20   # 가장자리 중앙 보너스
+        
+        return bonus
 
 # ===============================================================
 #          라인/2x2 점수 계산 함수
@@ -422,7 +437,7 @@ class P2():
 
     def available_locations(self):
         return [(row, col) for row, col in product(range(4), range(4)) if self.board[row][col] == 0]
-        
+    
 # ===============================================================
 #           fork 개수 세기
 # ===============================================================
