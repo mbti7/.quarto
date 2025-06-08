@@ -1,9 +1,10 @@
-# machines_p2.py
+# machines_p1.py
 import numpy as np
 import random
 from itertools import product
+import time
 
-class P2:
+class P1:
     turn_count = 0
 
     def __init__(self, board, available_pieces):
@@ -21,7 +22,7 @@ class P2:
         candidates = safe_pieces if safe_pieces else self.available_pieces
 
         # 속성 위험도 줄이기
-        if P2.turn_count <= 2:
+        if P1.turn_count <= 2:
             filtered = []
             for p in candidates:
                 if not self.creates_risk(p):
@@ -49,16 +50,16 @@ class P2:
         return False
     
     def adjust_depth(self):
-        if P2.turn_count < 3:
+        if P1.turn_count < 3:
             return 5
-        elif P2.turn_count < 5:
+        elif P1.turn_count < 5:
             return 6
         else:
             return 7
 
 
     def place_piece(self, selected_piece):
-        P2.turn_count += 1
+        P1.turn_count += 1
         piece_index = self.pieces.index(selected_piece) + 1
         locs = [(r, c) for r, c in product(range(4), range(4)) if self.board[r][c] == 0]
 
