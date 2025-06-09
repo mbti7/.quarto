@@ -1,7 +1,3 @@
-# ===============================
-# Imports & Constants
-# ===============================
-
 import numpy as np
 import random
 from collections import defaultdict
@@ -9,27 +5,27 @@ from itertools import product
 import math
 import copy
 
-# --- Algorithm Parameters ---
-MCTS_ITERATIONS = 1500
-SWITCH_POINT = 8
+# --- 파라미터 ---
+MCTS_ITERATIONS = 1000  # MCTS 반복 횟수
+SWITCH_POINT = 8        # Minimax로 전환하는 남은 말 개수 기준
 
-# --- Board Constants ---
+# --- 보드 관련 상수 ---
 BOARD_ROWS = 4
 BOARD_COLS = 4
-pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)]  # All 16 pieces
+pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)]  # 16개의 모든 말
 
 PLAYER = 2
-isFirst = True   # P2인 경우 True로 바꿔주세요.
+isFirst = True
 
-# --- DP Table for Minimax ---
+# --- 미니맥스용 DP 테이블 ---
 DP_table = {}
 
-# --- Position Bonus Constants ---
-CENTER_POS = {(1, 1), (1, 2), (2, 1), (2, 2)}
-CORNER_POS = {(0, 0), (0, 3), (3, 0), (3, 3)}
+# --- 위치 보너스 상수 ---
+CENTER_POS = {(1, 1), (1, 2), (2, 1), (2, 2)}  # 중앙 위치
+CORNER_POS = {(0, 0), (0, 3), (3, 0), (3, 3)}  # 코너 위치
 
 # ===============================
-# Utility Functions
+# 유틸리티 함수
 # ===============================
 
 def restart_game():
@@ -58,7 +54,7 @@ def get_position_bonus(row, col):
     return bonus
 
 def check_line(pieces):
-    # 기존 check_win의 내부 함수 복사
+    # 한 줄이 승리 조건을 만족하는지 확인
     return None not in pieces and any(
         all(piece[i] == pieces[0][i] for piece in pieces) for i in range(4)
     )
@@ -88,11 +84,11 @@ def get_fork_bonus(board, piece, row, col):
     return 0.1 * max(0, win_count - 1)  # 2개면 0.1, 3개면 0.2, ...
 
 # ===============================
-# Win Check Functions
+# 승리 체크 함수
 # ===============================
 
 def check_win_with_piece(board, piece, x, y):
-    # Place the piece temporarily
+    # piece를 임시로 놓고 승리 여부 확인
     if piece not in pieces:
         raise ValueError(f"Piece {piece} is not available")
     board[x][y] = get_piece_idx(piece)
@@ -144,13 +140,13 @@ def check_win(board, x, y):
     return False
 
 # ===============================
-# Player Class
+# 플레이어 클래스
 # ===============================
 
 class P2():
     def __init__(self, board, available_pieces):
         self.pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)]
-        self.board = board  # 0: empty / 1~16: piece
+        self.board = board  # 0: 빈칸 / 1~16: 말
         self.available_pieces = available_pieces
         self.available_places = self.get_available_places()
     
@@ -281,7 +277,7 @@ class P2():
         return available_places
         
     def minmax_alpha_beta(self, board, available_pieces, alpha, beta, is_maximizing, selected_piece, log=None):
-        # DP table check
+        # DP 테이블 확인
         state_key = hash(np.array(board).tobytes()) ^ hash(str(selected_piece))
         if state_key in DP_table:
             return DP_table[state_key]
@@ -345,36 +341,36 @@ class P2():
                     if beta <= alpha:
                         break
 
-        # Save to DP table
+        # DP 테이블에 저장
         DP_table[state_key] = best_eval
         return best_eval
 
 # ===============================
-# MCTS (Monte Carlo Tree Search)
+# MCTS (몬테카를로 트리 탐색)
 # ===============================
 
 class MCTS:
-    "Monte Carlo tree searcher. First rollout the tree then choose a move."
+    "Monte Carlo 트리 탐색기. 먼저 트리를 rollout한 뒤 수를 선택."
     def __init__(self, exploration_weight=1):
-        self.Q = defaultdict(int)  # total reward of each node
-        self.N = defaultdict(int)  # total visit count for each node
-        self.children = dict()     # children of each node
+        self.Q = defaultdict(int)  # 각 노드의 총 보상
+        self.N = defaultdict(int)  # 각 노드의 방문 횟수
+        self.children = dict()     # 각 노드의 자식 노드
         self.exploration_weight = exploration_weight
 
     def choose(self, node):
-        "Choose the best successor of node. (Choose a move in the game)"
+        "노드의 최적 자식 선택 (게임에서 수 선택)"
         if self.children[node] is None:
-            raise ValueError("Cannot choose from unexplored node")
+            raise ValueError("탐색되지 않은 노드에서는 선택할 수 없음")
                 
         def score(n):
             if self.N[n] == 0:
-                return float("-inf")  # avoid unseen moves
-            return self.Q[n] / self.N[n]  # average reward
+                return float("-inf")  # 방문하지 않은 수는 피함
+            return self.Q[n] / self.N[n]  # 평균 보상
 
         return max(self.children[node], key=score)
 
     def do_rollout(self, node):
-        "Make the tree one layer better. (Train for one iteration.)"
+        "트리를 한 단계 더 rollout (한 번 학습)"
         path = self._select(node)
         leaf = path[-1]
         self._expand(leaf)
@@ -386,7 +382,7 @@ class MCTS:
         while True:
             path.append(node)
             if node not in self.children or not self.children[node]:
-                # Node is either unexplored or terminal
+                # 노드가 미탐색 또는 터미널 노드
                 return path
 
             unexplored = set(self.children[node]) - set(self.children.keys())
@@ -399,7 +395,7 @@ class MCTS:
 
     def _expand(self, node):
         if node in self.children:
-            return  # already expanded
+            return  # 이미 확장됨
         
         node_list = node.find_children()
         self.children[node] = []
@@ -408,20 +404,20 @@ class MCTS:
                 self.children[node].append(current_node)
 
     def _simulate(self, node):
-        "Returns the reward for a random simulation (to completion) of `node`"
+        "노드에서 임의 시뮬레이션을 끝까지 돌려 보상 반환"
         while True:
             if node.is_terminal():
                 return node.reward()
             node = node.find_random_child()
 
     def _backpropagate(self, path, reward):
-        "Send the reward back up to the ancestors of the leaf"
+        "리프 노드의 보상을 조상 노드로 전달"
         for node in reversed(path):
             self.N[node] += 1
             self.Q[node] += reward
 
     def _uct_select(self, node):
-        "Select a child of node, balancing exploration & exploitation"
+        "탐험과 활용을 균형 있게 자식 노드 선택"
         assert all(n in self.children for n in self.children[node])
         log_N_vertex = math.log(self.N[node])
 
@@ -433,7 +429,7 @@ class MCTS:
         return max(self.children[node], key=uct)
 
 # ===============================
-# MCTS Node
+# MCTS 노드
 # ===============================
 
 class Node():
@@ -444,13 +440,13 @@ class Node():
     def find_children(self):
         result = []
         # 플레이어 순서를 고려하여 자식 노드의 상태를 전환
-        if self.board_state.selected_piece is None:  # Select_piece
+        if self.board_state.selected_piece is None:  # 말 선택 단계
             for piece in self.board_state.available_pieces:
                 next_board = copy.deepcopy(self.board_state)
                 next_board.select(piece)
                 next_node = Node(next_board)
                 result.append(next_node)
-        else:  # Place_piece
+        else:  # 말 배치 단계
             for row, col in self.board_state.available_places:
                 next_board = copy.deepcopy(self.board_state)
                 next_board.place(row, col)
@@ -467,11 +463,11 @@ class Node():
 
     def reward(self):
             copy_board = copy.deepcopy(self.board_state)
-            "Assumes self is terminal node. 1=win, 0=loss, .5=draw"
+            "터미널 노드라고 가정. 1=승리, 0=패배, .5=무승부"
             while not is_board_full(copy_board.available_places):
-                if copy_board.selected_piece is None:  # Select_piece
+                if copy_board.selected_piece is None:  # 말 선택 단계
                     copy_board.random_select()
-                else:  # Place_piece
+                else:  # 말 배치 단계
                     row, col = copy_board.get_random_place()
                     copy_board.place(row, col)
                     if check_win(copy_board.get_board(), row, col):
@@ -488,7 +484,7 @@ class Node():
         return str(self.board_state)
 
 # ===============================
-# MCTS Board
+# MCTS 보드
 # ===============================
 
 class Board:
@@ -506,26 +502,26 @@ class Board:
 
     def random_select(self):
         if self.selected_piece is not None:
-            raise TypeError(f"Now is 'place_piece' state")
+            raise TypeError(f"지금은 '말 배치' 단계입니다")
         selected_piece = random.choice(self.available_pieces)
         self.select(selected_piece)
 
     def select(self, piece):
         if piece not in self.available_pieces:
-            raise ValueError(f"The selected piece {piece} is not available")
+            raise ValueError(f"선택한 말 {piece}는 사용 불가")
         self.player = -self.player
         self.selected_piece = piece
         self.available_pieces.remove(piece)
     
     def get_random_place(self):
         if self.selected_piece is None:
-            raise TypeError("Now is 'select_piece' state")
+            raise TypeError("지금은 '말 선택' 단계입니다")
         selected_place = random.choice(self.available_places)
         return selected_place[0], selected_place[1]
     
     def place(self, row, col):
         if self.selected_piece is None:
-            raise TypeError("Now is 'select_piece' state")
+            raise TypeError("지금은 '말 선택' 단계입니다")
         self.__board[row][col] = get_piece_idx(self.selected_piece)
         self.available_places.remove((row, col))
         self.selected_piece = None
