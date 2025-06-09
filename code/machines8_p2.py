@@ -9,7 +9,7 @@ import copy
 MCTS_ITERATIONS = 1000  # MCTS 반복 횟수
 SWITCH_POINT = 8        # Minimax로 전환하는 남은 말 개수 기준
 
-# --- 보드 관련 상수 ---
+# --- 보드 상수 ---
 BOARD_ROWS = 4
 BOARD_COLS = 4
 pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)]  # 16개의 모든 말
@@ -17,7 +17,7 @@ pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for
 PLAYER = 2
 isFirst = True
 
-# --- 미니맥스용 DP 테이블 ---
+# --- Minimax용 DP 테이블 ---
 DP_table = {}
 
 # --- 위치 보너스 상수 ---
