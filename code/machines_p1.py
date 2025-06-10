@@ -30,7 +30,7 @@ class P1():
     def __init__(self, board, available_pieces):
         self.pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)] 
         self.board = board # 0:빈칸, 1~16:말 인덱스스
-        self.available_pieces = available_pieces #현재 고를 수 있는 말
+        self.available_pieces = available_pieces # 현재 고를 수 있는 말
         self.available_places = self.get_available_places()
     
     def select_piece(self):
@@ -45,7 +45,7 @@ class P1():
         else:
             return self._select_piece_minimax()
      
-        #MCTS를 이용한 말 선택
+        # MCTS를 이용한 말 선택
     def _select_piece_mcts(self):
         tree = MCTS()
         board = Board(self.board, 
@@ -114,6 +114,7 @@ class P1():
             return self._place_piece_minimax(selected_piece)
 
     def _place_piece_mcts(self, selected_piece):
+        # P1일 경우 첫 말 배치를 중앙에 하여 승률을 높임 
         if len(self.available_places) >= 15:
             centers = [(1, 1), (1, 2), (2, 1), (2, 2)]
             center_candidates = [pos for pos in centers if self.board[pos[0]][pos[1]] == 0]
